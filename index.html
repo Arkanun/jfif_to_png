@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>JFIF para PNG em Lote</title>
+
+    <!-- JSZip para gerar o arquivo ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+
+            padding: 40px 20px;
+
+            color: #0f172a;
+
+            background:
+                radial-gradient(circle at top, #dbeafe 0%, transparent 35%),
+                linear-gradient(135deg, #f8fafc, #e2e8f0);
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 720px;
+        }
+
+        .card {
+            width: 100%;
+
+            background: rgba(255, 255, 255, 0.96);
+
+            border-radius: 28px;
+
+            padding: 42px;
+
+            box-shadow:
+                0 25px 60px rgba(15, 23, 42, 0.12),
+                0 5px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .top-icon {
+            width: 68px;
+            height: 68px;
+
+            margin: 0 auto 18px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 20px;
+
+            font-size: 30px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #7c3aed
+                );
+
+            box-shadow:
+                0 10px 25px rgba(37, 99, 235, 0.25);
+        }
+
+        h1 {
+            font-size: 34px;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            max-width: 540px;
+            margin: 0 auto;
+
+            font-size: 15px;
+            line-height: 1.6;
+
+            color: #64748b;
+        }
+
+        /* ========================
+           UPLOAD
+        ======================== */
+
+        .drop-area {
+            display: block;
+
+            width: 100%;
+
+            padding: 38px 25px;
+
+            border: 2px dashed #94a3b8;
+            border-radius: 20px;
+
+            text-align: center;
+
+            cursor: pointer;
+
+            background: #f8fafc;
+
+            transition: 0.25s ease;
+
+            margin-bottom: 22px;
+        }
+
+        .drop-area:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+
+            transform: translateY(-2px);
+        }
+
+        .drop-area.dragover {
+            border-color: #2563eb;
+            background: #dbeafe;
+
+            transform: scale(1.01);
+        }
+
+        .upload-icon {
+            width: 58px;
+            height: 58px;
+
+            margin: 0 auto 18px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            border-radius: 50%;
+
+            background: #dbeafe;
+
+            color: #2563eb;
+
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .drop-area strong {
+            display: block;
+
+            margin-bottom: 8px;
+
+            font-size: 17px;
+        }
+
+        .drop-area span {
+            display: block;
+
+            font-size: 14px;
+
+            color: #64748b;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* ========================
+           CONTADOR
+        ======================== */
+
+        .summary {
+            display: none;
+
+            justify-content: space-between;
+            align-items: center;
+
+            gap: 15px;
+
+            margin-bottom: 16px;
+        }
+
+        .summary.show {
+            display: flex;
+        }
+
+        .summary-text {
+            font-size: 14px;
+
+            color: #475569;
+        }
+
+        .summary-text strong {
+            color: #0f172a;
+        }
+
+        .clear-btn {
+            border: none;
+
+            background: transparent;
+
+            color: #dc2626;
+
+            cursor: pointer;
+
+            font-weight: bold;
+
+            font-size: 13px;
+        }
+
+        .clear-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* ========================
+           LISTA
+        ======================== */
+
+        .file-list {
+            display: none;
+
+            width: 100%;
+
+            max-height: 350px;
+
+            overflow-y: auto;
+
+            margin-bottom: 22px;
+
+            padding-right: 5px;
+        }
+
+        .file-list.show {
+            display: block;
+        }
+
+        .file-item {
+            width: 100%;
+
+            display: flex;
+            align-items: center;
+
+            gap: 12px;
+
+            background: #f8fafc;
+
+            border: 1px solid #e2e8f0;
+
+            padding: 11px;
+
+            border-radius: 14px;
+
+            margin-bottom: 10px;
+        }
+
+        .thumbnail {
+            width: 55px;
+            height: 55px;
+
+            flex-shrink: 0;
+
+            border-radius: 10px;
+
+            object-fit: cover;
+
+            background: #e2e8f0;
+        }
+
+        .file-details {
+            flex: 1;
+
+            min-width: 0;
+        }
+
+        .file-name {
+            font-size: 14px;
+            font-weight: bold;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            margin-bottom: 4px;
+        }
+
+        .file-size {
+            font-size: 12px;
+
+            color: #64748b;
+        }
+
+        .remove-btn {
+            width: 34px;
+            height: 34px;
+
+            flex-shrink: 0;
+
+            border: none;
+            border-radius: 9px;
+
+            background: #fee2e2;
+
+            color: #dc2626;
+
+            font-size: 17px;
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #fecaca;
+        }
+
+        /* ========================
+           BOTÃO PRINCIPAL
+        ======================== */
+
+        .converter {
+            width: 100%;
+
+            padding: 15px 20px;
+
+            border: none;
+            border-radius: 14px;
+
+            color: white;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            cursor: pointer;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #7c3aed
+                );
+
+            box-shadow:
+                0 8px 20px rgba(37, 99, 235, 0.20);
+
+            transition: 0.25s ease;
+        }
+
+        .converter:hover:not(:disabled) {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 12px 25px rgba(37, 99, 235, 0.30);
+        }
+
+        .converter:disabled {
+            cursor: not-allowed;
+
+            background: #cbd5e1;
+
+            color: #64748b;
+
+            box-shadow: none;
+        }
+
+        /* ========================
+           PROGRESSO
+        ======================== */
+
+        .progress-container {
+            display: none;
+
+            margin-top: 20px;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+
+            font-size: 13px;
+
+            margin-bottom: 8px;
+
+            color: #475569;
+        }
+
+        .progress-background {
+            width: 100%;
+            height: 10px;
+
+            border-radius: 20px;
+
+            background: #e2e8f0;
+
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+
+            border-radius: 20px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #2563eb,
+                    #7c3aed
+                );
+
+            transition: width 0.25s ease;
+        }
+
+        /* ========================
+           STATUS
+        ======================== */
+
+        .status {
+            display: none;
+
+            margin-top: 16px;
+
+            padding: 12px;
+
+            border-radius: 12px;
+
+            text-align: center;
+
+            font-size: 14px;
+            font-weight: bold;
+
+            background: #dcfce7;
+
+            color: #15803d;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .privacy {
+            margin-top: 20px;
+
+            text-align: center;
+
+            font-size: 12px;
+
+            line-height: 1.6;
+
+            color: #64748b;
+        }
+
+        .privacy strong {
+            color: #334155;
+        }
+
+        footer {
+            margin-top: 22px;
+
+            text-align: center;
+
+            color: #64748b;
+
+            font-size: 13px;
+        }
+
+        footer a {
+            color: #2563eb;
+
+            text-decoration: none;
+
+            font-weight: bold;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+
+            body {
+                padding: 20px 14px;
+            }
+
+            .card {
+                padding: 30px 20px;
+
+                border-radius: 22px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .drop-area {
+                padding: 30px 18px;
+            }
+
+            .summary {
+                align-items: flex-start;
+            }
+
+            .thumbnail {
+                width: 48px;
+                height: 48px;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+    <div class="card">
+
+        <div class="header">
+
+            <div class="top-icon">
+                🖼️
+            </div>
+
+            <h1>JFIF → PNG em Lote</h1>
+
+            <p class="subtitle">
+                Selecione várias imagens JFIF e converta todas para PNG de uma só vez.
+            </p>
+
+        </div>
+
+
+        <label
+            class="drop-area"
+            id="dropArea"
+            for="arquivo"
+        >
+
+            <div class="upload-icon">
+                ↑
+            </div>
+
+            <strong>
+                Clique para selecionar várias imagens
+            </strong>
+
+            <span>
+                ou arraste seus arquivos JFIF para cá
+            </span>
+
+        </label>
+
+
+        <input
+            type="file"
+            id="arquivo"
+            accept=".jfif,image/jpeg"
+            multiple
+        >
+
+
+        <div
+            class="summary"
+            id="summary"
+        >
+
+            <div class="summary-text">
+
+                <strong id="contadorArquivos">
+                    0 arquivos
+                </strong>
+
+                selecionados
+
+            </div>
+
+            <button
+                class="clear-btn"
+                id="limparTudo"
+                type="button"
+            >
+                Limpar tudo
+            </button>
+
+        </div>
+
+
+        <div
+            class="file-list"
+            id="fileList"
+        ></div>
+
+
+        <button
+            class="converter"
+            id="converter"
+            disabled
+        >
+            Converter todas e baixar ZIP
+        </button>
+
+
+        <div
+            class="progress-container"
+            id="progressContainer"
+        >
+
+            <div class="progress-text">
+
+                <span id="progressStatus">
+                    Convertendo...
+                </span>
+
+                <span id="progressPercent">
+                    0%
+                </span>
+
+            </div>
+
+            <div class="progress-background">
+
+                <div
+                    class="progress-bar"
+                    id="progressBar"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="status"
+            id="status"
+        >
+            ✓ Conversão concluída! Seu ZIP foi gerado.
+        </div>
+
+
+        <div class="privacy">
+
+            🔒 <strong>Privacidade:</strong>
+
+            suas imagens não são enviadas para nenhum servidor.
+
+            Todo o processamento acontece diretamente
+            no seu navegador.
+
+        </div>
+
+    </div>
+
+
+    <footer>
+
+        Desenvolvido por
+
+        <a
+            href="https://x.com/sergiorbv"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            @sergiorbv
+        </a>
+
+        &nbsp;•&nbsp;
+
+        Criado com ajuda do
+        <strong>ChatGPT</strong>
+
+    </footer>
+
+</div>
+
+
+<script>
+
+    const input =
+        document.getElementById("arquivo");
+
+    const dropArea =
+        document.getElementById("dropArea");
+
+    const fileList =
+        document.getElementById("fileList");
+
+    const summary =
+        document.getElementById("summary");
+
+    const contadorArquivos =
+        document.getElementById("contadorArquivos");
+
+    const limparTudo =
+        document.getElementById("limparTudo");
+
+    const converter =
+        document.getElementById("converter");
+
+    const progressContainer =
+        document.getElementById("progressContainer");
+
+    const progressBar =
+        document.getElementById("progressBar");
+
+    const progressPercent =
+        document.getElementById("progressPercent");
+
+    const progressStatus =
+        document.getElementById("progressStatus");
+
+    const status =
+        document.getElementById("status");
+
+
+    let arquivosSelecionados = [];
+
+
+    /* =========================
+       SELEÇÃO PELO INPUT
+    ========================= */
+
+    input.addEventListener(
+        "change",
+        function () {
+
+            adicionarArquivos(
+                Array.from(input.files)
+            );
+
+            input.value = "";
+
+        }
+    );
+
+
+    /* =========================
+       DRAG AND DROP
+    ========================= */
+
+    dropArea.addEventListener(
+        "dragover",
+        function (e) {
+
+            e.preventDefault();
+
+            dropArea.classList.add(
+                "dragover"
+            );
+
+        }
+    );
+
+
+    dropArea.addEventListener(
+        "dragleave",
+        function () {
+
+            dropArea.classList.remove(
+                "dragover"
+            );
+
+        }
+    );
+
+
+    dropArea.addEventListener(
+        "drop",
+        function (e) {
+
+            e.preventDefault();
+
+            dropArea.classList.remove(
+                "dragover"
+            );
+
+            adicionarArquivos(
+                Array.from(
+                    e.dataTransfer.files
+                )
+            );
+
+        }
+    );
+
+
+    /* =========================
+       ADICIONAR ARQUIVOS
+    ========================= */
+
+    function adicionarArquivos(novosArquivos) {
+
+        let invalidos = 0;
+
+
+        novosArquivos.forEach(
+            function (arquivo) {
+
+                const nome =
+                    arquivo.name.toLowerCase();
+
+
+                if (!nome.endsWith(".jfif")) {
+
+                    invalidos++;
+
+                    return;
+
+                }
+
+
+                const jaExiste =
+                    arquivosSelecionados.some(
+                        function (item) {
+
+                            return (
+                                item.name === arquivo.name &&
+                                item.size === arquivo.size &&
+                                item.lastModified === arquivo.lastModified
+                            );
+
+                        }
+                    );
+
+
+                if (!jaExiste) {
+
+                    arquivosSelecionados.push(
+                        arquivo
+                    );
+
+                }
+
+            }
+        );
+
+
+        if (invalidos > 0) {
+
+            alert(
+                invalidos +
+                " arquivo(s) foram ignorados porque não são JFIF."
+            );
+
+        }
+
+
+        atualizarInterface();
+
+    }
+
+
+    /* =========================
+       ATUALIZAR INTERFACE
+    ========================= */
+
+    function atualizarInterface() {
+
+        fileList.innerHTML = "";
+
+
+        if (
+            arquivosSelecionados.length === 0
+        ) {
+
+            summary.classList.remove(
+                "show"
+            );
+
+            fileList.classList.remove(
+                "show"
+            );
+
+            converter.disabled =
+                true;
+
+            status.classList.remove(
+                "show"
+            );
+
+            progressContainer.classList.remove(
+                "show"
+            );
+
+            return;
+
+        }
+
+
+        summary.classList.add(
+            "show"
+        );
+
+        fileList.classList.add(
+            "show"
+        );
+
+        converter.disabled =
+            false;
+
+
+        contadorArquivos.textContent =
+            arquivosSelecionados.length === 1
+            ? "1 arquivo"
+            : arquivosSelecionados.length +
+              " arquivos";
+
+
+        arquivosSelecionados.forEach(
+            function (arquivo, index) {
+
+                criarItemArquivo(
+                    arquivo,
+                    index
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =========================
+       CRIAR ITEM NA LISTA
+    ========================= */
+
+    function criarItemArquivo(
+        arquivo,
+        index
+    ) {
+
+        const item =
+            document.createElement(
+                "div"
+            );
+
+        item.className =
+            "file-item";
+
+
+        const imagem =
+            document.createElement(
+                "img"
+            );
+
+        imagem.className =
+            "thumbnail";
+
+
+        const previewURL =
+            URL.createObjectURL(
+                arquivo
+            );
+
+
+        imagem.src =
+            previewURL;
+
+
+        imagem.onload =
+            function () {
+
+                URL.revokeObjectURL(
+                    previewURL
+                );
+
+            };
+
+
+        const detalhes =
+            document.createElement(
+                "div"
+            );
+
+        detalhes.className =
+            "file-details";
+
+
+        const nome =
+            document.createElement(
+                "div"
+            );
+
+        nome.className =
+            "file-name";
+
+        nome.textContent =
+            arquivo.name;
+
+
+        const tamanho =
+            document.createElement(
+                "div"
+            );
+
+        tamanho.className =
+            "file-size";
+
+        tamanho.textContent =
+            formatarTamanho(
+                arquivo.size
+            );
+
+
+        detalhes.appendChild(
+            nome
+        );
+
+        detalhes.appendChild(
+            tamanho
+        );
+
+
+        const remover =
+            document.createElement(
+                "button"
+            );
+
+        remover.className =
+            "remove-btn";
+
+        remover.type =
+            "button";
+
+        remover.textContent =
+            "×";
+
+
+        remover.addEventListener(
+            "click",
+            function () {
+
+                arquivosSelecionados.splice(
+                    index,
+                    1
+                );
+
+                atualizarInterface();
+
+            }
+        );
+
+
+        item.appendChild(
+            imagem
+        );
+
+        item.appendChild(
+            detalhes
+        );
+
+        item.appendChild(
+            remover
+        );
+
+
+        fileList.appendChild(
+            item
+        );
+
+    }
+
+
+    /* =========================
+       LIMPAR TODOS
+    ========================= */
+
+    limparTudo.addEventListener(
+        "click",
+        function () {
+
+            arquivosSelecionados = [];
+
+            atualizarInterface();
+
+        }
+    );
+
+
+    /* =========================
+       TAMANHO DO ARQUIVO
+    ========================= */
+
+    function formatarTamanho(bytes) {
+
+        if (bytes < 1024) {
+
+            return bytes +
+                " bytes";
+
+        }
+
+
+        if (
+            bytes <
+            1024 * 1024
+        ) {
+
+            return (
+                bytes / 1024
+            ).toFixed(1) +
+                " KB";
+
+        }
+
+
+        return (
+            bytes /
+            (1024 * 1024)
+        ).toFixed(2) +
+            " MB";
+
+    }
+
+
+    /* =========================
+       CONVERTER UMA IMAGEM
+    ========================= */
+
+    function converterImagem(
+        arquivo
+    ) {
+
+        return new Promise(
+            function (
+                resolve,
+                reject
+            ) {
+
+                const imagem =
+                    new Image();
+
+
+                const url =
+                    URL.createObjectURL(
+                        arquivo
+                    );
+
+
+                imagem.onload =
+                    function () {
+
+                        const canvas =
+                            document.createElement(
+                                "canvas"
+                            );
+
+
+                        canvas.width =
+                            imagem.naturalWidth;
+
+
+                        canvas.height =
+                            imagem.naturalHeight;
+
+
+                        const ctx =
+                            canvas.getContext(
+                                "2d"
+                            );
+
+
+                        ctx.drawImage(
+                            imagem,
+                            0,
+                            0
+                        );
+
+
+                        canvas.toBlob(
+                            function (blob) {
+
+                                URL.revokeObjectURL(
+                                    url
+                                );
+
+
+                                if (!blob) {
+
+                                    reject(
+                                        new Error(
+                                            "Erro na conversão."
+                                        )
+                                    );
+
+                                    return;
+
+                                }
+
+
+                                resolve(
+                                    blob
+                                );
+
+                            },
+                            "image/png"
+                        );
+
+                    };
+
+
+                imagem.onerror =
+                    function () {
+
+                        URL.revokeObjectURL(
+                            url
+                        );
+
+                        reject(
+                            new Error(
+                                "Não foi possível carregar a imagem."
+                            )
+                        );
+
+                    };
+
+
+                imagem.src =
+                    url;
+
+            }
+        );
+
+    }
+
+
+    /* =========================
+       CONVERTER TODAS
+    ========================= */
+
+    converter.addEventListener(
+        "click",
+        async function () {
+
+            if (
+                arquivosSelecionados.length === 0
+            ) {
+
+                return;
+
+            }
+
+
+            converter.disabled =
+                true;
+
+
+            converter.textContent =
+                "Convertendo imagens...";
+
+
+            status.classList.remove(
+                "show"
+            );
+
+
+            progressContainer.classList.add(
+                "show"
+            );
+
+
+            progressBar.style.width =
+                "0%";
+
+
+            progressPercent.textContent =
+                "0%";
+
+
+            const zip =
+                new JSZip();
+
+
+            let convertidas = 0;
+
+
+            try {
+
+                for (
+                    let i = 0;
+                    i <
+                    arquivosSelecionados.length;
+                    i++
+                ) {
+
+                    const arquivo =
+                        arquivosSelecionados[i];
+
+
+                    progressStatus.textContent =
+                        "Convertendo " +
+                        arquivo.name;
+
+
+                    const blob =
+                        await converterImagem(
+                            arquivo
+                        );
+
+
+                    let nomeBase =
+                        arquivo.name.replace(
+                            /\.[^/.]+$/,
+                            ""
+                        );
+
+
+                    let nomePNG =
+                        nomeBase +
+                        ".png";
+
+
+                    let contador = 1;
+
+
+                    while (
+                        zip.file(
+                            nomePNG
+                        )
+                    ) {
+
+                        nomePNG =
+                            nomeBase +
+                            "-" +
+                            contador +
+                            ".png";
+
+                        contador++;
+
+                    }
+
+
+                    zip.file(
+                        nomePNG,
+                        blob
+                    );
+
+
+                    convertidas++;
+
+
+                    const porcentagem =
+                        Math.round(
+                            (
+                                convertidas /
+                                arquivosSelecionados.length
+                            ) * 100
+                        );
+
+
+                    progressBar.style.width =
+                        porcentagem +
+                        "%";
+
+
+                    progressPercent.textContent =
+                        porcentagem +
+                        "%";
+
+                }
+
+
+                progressStatus.textContent =
+                    "Gerando arquivo ZIP...";
+
+
+                const zipBlob =
+                    await zip.generateAsync({
+                        type: "blob"
+                    });
+
+
+                const downloadURL =
+                    URL.createObjectURL(
+                        zipBlob
+                    );
+
+
+                const link =
+                    document.createElement(
+                        "a"
+                    );
+
+
+                link.href =
+                    downloadURL;
+
+
+                link.download =
+                    "imagens-png.zip";
+
+
+                document.body.appendChild(
+                    link
+                );
+
+
+                link.click();
+
+
+                link.remove();
+
+
+                setTimeout(
+                    function () {
+
+                        URL.revokeObjectURL(
+                            downloadURL
+                        );
+
+                    },
+                    1000
+                );
+
+
+                progressStatus.textContent =
+                    "Conversão concluída";
+
+
+                status.classList.add(
+                    "show"
+                );
+
+
+            } catch (erro) {
+
+                console.error(
+                    erro
+                );
+
+
+                alert(
+                    "Ocorreu um erro durante a conversão."
+                );
+
+            }
+
+
+            converter.disabled =
+                false;
+
+
+            converter.textContent =
+                "Converter todas e baixar ZIP";
+
+        }
+    );
+
+</script>
+
+</body>
+</html>
